@@ -72,6 +72,8 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 		Err(_) =>
 		{
 			println!("  error: failed to parse index");
+			Packet::error("failed to parse index")
+				.send(addr);
 			exit(-1);
 		}
 	};

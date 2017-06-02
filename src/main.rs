@@ -41,7 +41,6 @@ use std::fs::File;
 
 fn main()
 {
-
 	if !Path::new("data").exists()
 	{
 		if let Err(_) = create_dir("data")
