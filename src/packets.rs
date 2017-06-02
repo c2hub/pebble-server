@@ -2,8 +2,9 @@
 use serde_cbor;
 
 use std::net::ToSocketAddrs;
-use std::net::UdpSocket;
 use std::process::exit;
+
+use SOCKET;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Packet
@@ -154,22 +155,6 @@ impl Packet
 	*/
 	pub fn send<A: ToSocketAddrs>(self, addr: A)
 	{
-		let sock = match UdpSocket::bind("0.0.0.0:9002")
-		{
-			Ok(s) => s,
-			Err(_) =>
-			{
-				println!("  error: failed to bind to socket.");
-				exit(-1);
-			}
-		};
-
-		if let Err(_) = sock.connect(addr)
-		{
-			println!("  error: failed to connect to remote host");
-			exit(-1);
-		}
-
 		let bytes = match self.clone().make()
 		{
 			Ok(b) => b,
@@ -180,6 +165,9 @@ impl Packet
 			}
 		};
 
-		let _ = sock.send(&bytes);
+		if let Err(e) = SOCKET.send_to(&bytes, addr)
+		{
+			println!("{}", e);
+		}
 	}
 }

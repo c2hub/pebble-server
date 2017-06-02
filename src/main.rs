@@ -1,6 +1,8 @@
 #![allow(unused_variables)]
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate lazy_static;
 extern crate serde_cbor;
 extern crate ansi_term;
 extern crate serde;
@@ -38,6 +40,19 @@ use new::new;
 
 use std::io::Write;
 use std::fs::File;
+
+lazy_static!
+{
+	pub static ref SOCKET: UdpSocket = match UdpSocket::bind("0.0.0.0:9001")
+	{
+		Ok(s) => s,
+		Err(_) =>
+		{
+			println!(" error: failed to bind to socket");
+			exit(-1);
+		}
+	};
+}
 
 fn main()
 {
@@ -86,7 +101,7 @@ fn main()
 		);
 	}
 
-	let sock = match UdpSocket::bind("0.0.0.0:9001")
+	/*let sock = match UdpSocket::bind("0.0.0.0:9001")
 	{
 		Ok(s) => s,
 		Err(_) =>
@@ -94,12 +109,12 @@ fn main()
 			println!(" error: failed to bind to socket");
 			exit(-1);
 		}
-	};
+	};*/
 
 	loop
 	{
 		let mut res = [0; 2 * 1024 * 1024];
-		let (amt, src) = match sock.recv_from(&mut res)
+		let (amt, src) = match SOCKET.recv_from(&mut res)
 		{
 			Ok((a,s)) => (a,s),
 			Err(_) =>
@@ -120,6 +135,7 @@ fn main()
 			}
 		};
 
+		println!("  received {:?} from {}", &packet.ptype, &src);
 		thread::spawn( move ||
 			{
 				match packet.ptype
