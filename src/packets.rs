@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use serde_cbor;
 
+use std::net::ToSocketAddrs;
 use std::net::UdpSocket;
 use std::process::exit;
 
@@ -151,9 +152,9 @@ impl Packet
 	/*
 	** Sending
 	*/
-	pub fn send(self) -> Packet
+	pub fn send<A: ToSocketAddrs>(self, addr: A)
 	{
-		let sock = match UdpSocket::bind("0.0.0.0:9001")
+		let sock = match UdpSocket::bind("0.0.0.0:9002")
 		{
 			Ok(s) => s,
 			Err(_) =>
@@ -163,9 +164,9 @@ impl Packet
 			}
 		};
 
-		if let Err(_) = sock.connect("magnusi.tech:9001")
+		if let Err(_) = sock.connect(addr)
 		{
-			println!("  error: failed to connect to remote host. Are you connected to the internet?");
+			println!("  error: failed to connect to remote host");
 			exit(-1);
 		}
 
@@ -179,34 +180,6 @@ impl Packet
 			}
 		};
 
-		loop
-		{
-			if let Err(_) = sock.send(&bytes)
-			{
-				println!("  error: failed to send data");
-				exit(-1);
-			};
-
-			let mut res_buf = [0; 2 * 1024 * 1024]; // maximum response size is 2mb
-
-			let res_size = match sock.recv(&mut res_buf)
-			{
-				Ok(s) => s,
-				Err(_) => continue,
-			};
-			let res_buf = &mut res_buf[..res_size];
-
-			let res = match Packet::read(&res_buf.to_vec())
-			{
-				Ok(p) => p,
-				Err(_) =>
-				{
-					println!("  error: failed to deserialize packet.");
-					exit(-1);
-				}
-			};
-
-			return res;
-		}
+		let _ = sock.send(&bytes);
 	}
 }

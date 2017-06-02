@@ -9,6 +9,8 @@ extern crate toml;
 use std::thread;
 use std::net::UdpSocket;
 use std::process::exit;
+use std::fs::create_dir;
+use std::path::Path;
 
 mod packets;
 mod index;
@@ -23,6 +25,7 @@ mod login;
 mod new;
 
 use packets::{Packet, PacketType};
+use index::{Index, Entry};
 
 use publish::publish;
 use update::update;
@@ -33,8 +36,57 @@ use register::register;
 use login::login;
 use new::new;
 
+use std::io::Write;
+use std::fs::File;
+
 fn main()
 {
+
+	if !Path::new("data").exists()
+	{
+		if let Err(_) = create_dir("data")
+		{
+			println!("  error: failed to create data folder");
+			exit(-1);
+		}
+		let mut index = match File::create("data/index")
+		{
+			Ok(f) => f,
+			Err(_) =>
+			{
+				println!("  error: failed to create index file");
+				exit(-1);
+			}
+		};
+
+		let _ = write!(index, "{}",
+			toml::to_string(&Index
+				{
+					entries: Some
+					(
+						vec!
+						[
+							Entry
+							{
+								name: "dummy".to_string(),
+								versions: vec!["1.0.0".to_string()],
+								author: "lukas".to_string(),
+								repository: None,
+							},
+							Entry
+							{
+								name: "dummy2".to_string(),
+								versions: vec!["1.0.0".to_string()],
+								author: "lukas".to_string(),
+								repository: None,
+							}
+						]
+					)
+				}
+			).unwrap()
+		);
+	}
+
 	let sock = match UdpSocket::bind("0.0.0.0:9001")
 	{
 		Ok(s) => s,

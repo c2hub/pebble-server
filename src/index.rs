@@ -8,7 +8,7 @@ pub struct Index
 pub struct Entry
 {
 	pub name: String,
-	pub version: String,
+	pub versions: Vec<String>,
 	pub author: String,
 	pub repository: Option<String>,
 }
