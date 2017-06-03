@@ -53,28 +53,26 @@ pub fn register<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
-	if user_db.clone().users.unwrap().iter().find(|x| x.name == name).is_none()
+	let usr = User
 	{
-		match user_db.users
+		name: name.clone(),
+		hash: hash,
+	};
+
+	match user_db.users
+	{
+		Some(ref mut u) =>
 		{
-			Some(ref mut u) =>
+			if u.clone().iter().find(|x| x.name == name).is_none()
+				{u.push(usr);}
+			else
 			{
-				u.push(
-					User
-					{
-						name: name,
-						hash: hash,
-					}
-				);
-			},
-			None => unreachable!()
-		}
-	}
-	else
-	{
-		Packet::error("user already exists")
-			.send(addr);
-		return;
+				Packet::error("user already exists")
+					.send(addr);
+				return;
+			}
+		},
+		None => unreachable!()
 	}
 
 	let path = match home_dir()
