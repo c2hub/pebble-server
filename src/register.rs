@@ -85,12 +85,12 @@ pub fn register<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
-	let mut db_file = match File::open(&path)
+	let mut db_file = match File::create(&path)
 	{
 		Ok(f) => f,
 		Err(_) =>
 		{
-			println!("  error: failed to create user db");
+			println!("  error: failed to open user db");
 			exit(-1);
 		}
 	};
