@@ -95,9 +95,16 @@ pub fn register<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
-	let _ = write!(db_file, "{}",
+	match write!(db_file, "{}",
 		toml::to_string(&user_db).unwrap()
-	);
+	)
+	{
+		Ok(_) => {},
+		Err(e) =>
+		{
+			println!("{}", e);
+		}
+	}
 
 	Packet::register("hello", "there") // Kenobi
 		.send(addr);
