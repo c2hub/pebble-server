@@ -2,7 +2,7 @@ use packets::Packet;
 use std::process::exit;
 use std::net::ToSocketAddrs;
 
-use index::*;
+use data::*;
 
 pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 {

@@ -15,7 +15,7 @@ use std::fs::create_dir;
 use std::path::Path;
 
 mod packets;
-mod index;
+mod data;
 
 mod publish;
 mod update;
@@ -27,7 +27,7 @@ mod login;
 mod new;
 
 use packets::{Packet, PacketType};
-use index::{Index, Entry};
+use data::{Index, Entry, UserDB, User};
 
 use publish::publish;
 use update::update;
@@ -38,6 +38,7 @@ use register::register;
 use login::login;
 use new::new;
 
+use std::env::home_dir;
 use std::io::Write;
 use std::fs::File;
 
@@ -101,15 +102,51 @@ fn main()
 		);
 	}
 
-	/*let sock = match UdpSocket::bind("0.0.0.0:9001")
+	let path = match home_dir()
 	{
-		Ok(s) => s,
-		Err(_) =>
+		Some(mut d) => {d.push("pebble_users"); d},
+		None =>
 		{
-			println!(" error: failed to bind to socket");
+			println!("  error: failed to open user db");
 			exit(-1);
 		}
-	};*/
+	};
+
+	if !path.exists()
+	{
+		let mut user_db = match File::create(&path)
+		{
+			Ok(f) => f,
+			Err(_) =>
+			{
+				println!("  error: failed to create user db");
+				exit(-1);
+			}
+		};
+
+		let _ = write!(user_db, "{}",
+			toml::to_string(&UserDB
+				{
+					users: Some
+					(
+						vec!
+						[
+							User
+							{
+								name: "lukas".to_string(),
+								hash: "ihavenone".to_string(),
+							},
+							User
+							{
+								name: "john_doe".to_string(),
+								hash: "meneither".to_string(),
+							}
+						]
+					)
+				}
+			).unwrap()
+		);
+	}
 
 	loop
 	{
