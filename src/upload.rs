@@ -229,7 +229,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 	};
 
 	if write!(index_f, "{}",
-			toml::to_string(&index).unwrap()
+			toml::to_string(&Index {entries: Some(index)}).unwrap()
 		).is_err()
 	{
 		println!("  error: failed to write to index");
