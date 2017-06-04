@@ -15,6 +15,7 @@ pub struct Packet
 	pub name: Option<String>,
 	pub extra: Option<String>,
 	pub data: Option<String>,
+	pub data2: Option<String>,
 	pub raw_data: Option<Vec<u8>>
 }
 
@@ -44,6 +45,7 @@ impl Packet
 			name: None,
 			extra: None,
 			data: None,
+			data2: None,
 			raw_data: None
 		}
 	}
@@ -69,6 +71,12 @@ impl Packet
 	pub fn data(mut self, data: String) -> Packet
 	{
 		self.data = Some(data);
+		self
+	}
+
+	pub fn data2(mut self, data: String) -> Packet
+	{
+		self.data2 = Some(data);
 		self
 	}
 
@@ -120,13 +128,15 @@ impl Packet
 			.data(version.to_owned())
 	}
 
-	pub fn upload(name: &str, file: Vec<u8>, version: &str) -> Packet
+	pub fn upload(uname: &str, hash: &str, file: Vec<u8>, name: &str, version: &str) -> Packet
 	{
 		Packet::new()
 			.ptype(PacketType::Upload)
-			.name(name.to_owned())
+			.name(uname.to_owned())
 			.raw_data(file)
 			.data(version.to_owned())
+			.data2(name.to_owned())
+			.extra(hash.to_owned())
 	}
 
 	pub fn publish(name: &str, file: Vec<u8>, version: &str) -> Packet

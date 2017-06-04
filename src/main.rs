@@ -1,4 +1,5 @@
 #![allow(unused_variables)]
+extern crate version_compare;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
