@@ -43,14 +43,12 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 	if let Some(entry) = index.iter()
 		.find(|ref ent| ent.name == name)
 	{
-		println!("Some");
 		Packet::find(&name, &entry.versions[0])
 			.send(addr);
 		return;
 	}
 	else
 	{
-		println!("None");
 		Packet::find(&name, "none")
 			.send(addr);
 	}
