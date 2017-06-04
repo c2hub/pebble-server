@@ -85,8 +85,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 	if user_db.users
 		.unwrap()
 		.iter()
-		.find(|x|
-			{println!("{} {} {} {}", x.name, x.hash, name, hash); x.name == name && x.hash == hash})
+		.find(|x| x.name == name && x.hash == hash)
 		.is_none()
 	{
 		println!("  error: incorrect username or password");
