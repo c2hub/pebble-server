@@ -13,7 +13,7 @@ pub struct Packet
 {
 	pub ptype: PacketType,
 	pub name: Option<String>,
-	pub list: Option<Vec<String>>,
+	pub extra: Option<String>,
 	pub data: Option<String>,
 	pub raw_data: Option<Vec<u8>>
 }
@@ -42,7 +42,7 @@ impl Packet
 		{
 			ptype: PacketType::New,
 			name: None,
-			list: None,
+			extra: None,
 			data: None,
 			raw_data: None
 		}
@@ -60,9 +60,9 @@ impl Packet
 		self
 	}
 
-	pub fn list(mut self, list: Vec<String>) -> Packet
+	pub fn extra(mut self, extra: String) -> Packet
 	{
-		self.list = Some(list);
+		self.extra = Some(extra);
 		self
 	}
 
