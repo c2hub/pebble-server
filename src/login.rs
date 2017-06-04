@@ -48,7 +48,7 @@ pub fn login<A: ToSocketAddrs>(packet: Packet, addr: A)
 		.find(|x| x.name == name && x.hash == hash)
 		.is_some()
 	{
-		Packet::register("hello", "there")
+		Packet::login("hello", "there")
 			.send(addr);
 	}
 	else
