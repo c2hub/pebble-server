@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 use serde_cbor;
+use ansi_term::Colour::{Yellow, Green, Red};
 
 use std::net::ToSocketAddrs;
 use std::process::exit;
+use std::fmt;
 
 use SOCKET;
 
@@ -168,6 +170,104 @@ impl Packet
 		if let Err(e) = SOCKET.send_to(&bytes, addr)
 		{
 			println!("{}", e);
+		}
+	}
+}
+
+#[allow(unused_must_use)]
+impl fmt::Display for Packet
+{
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+	{
+		write!(f, "{}",
+			Yellow.bold().paint("packet")
+		);
+
+		match self.ptype
+		{
+			PacketType::New =>
+				write!(f, "new"),
+			PacketType::Find =>
+				write!(f, "find {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Error =>
+				write!(f, "error {}",
+					Red.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Upload =>
+				write!(f,  "upload [{}] {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					}),
+					Red.bold().paint(match self.data
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Publish =>
+				write!(f,  "publish [{}] {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					}),
+					Red.bold().paint(match self.data
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Update =>
+				write!(f,  "update [{}] {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					}),
+					Red.bold().paint(match self.data
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Register =>
+				write!(f,  "register {} {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					}),
+					Red.bold().paint(match self.data
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
+			PacketType::Login =>
+				write!(f,  "login {} {}",
+					Green.bold().paint(match self.name
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					}),
+					Red.bold().paint(match self.data
+					{
+						Some(ref n) => n.clone(),
+						None => "none".to_string(),
+					})
+				),
 		}
 	}
 }

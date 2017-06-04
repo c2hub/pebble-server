@@ -172,7 +172,7 @@ fn main()
 			}
 		};
 
-		println!("  received {:?} from {}", &packet.ptype, &src);
+		println!("  {} from {}", &packet, &src);
 		thread::spawn( move ||
 			{
 				match packet.ptype
