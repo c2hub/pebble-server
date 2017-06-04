@@ -7,6 +7,7 @@ use std::net::ToSocketAddrs;
 use std::fs::{File, create_dir_all};
 
 use version_compare::Version;
+use toml;
 
 pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
@@ -213,6 +214,28 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 			author: uname,
 			repository: None, //TODO
 		});
+	}
+
+	let mut index_f = match File::create("data/index")
+	{
+		Ok(f) => f,
+		Err(_) =>
+		{
+			println!("  error: failed to open index file");
+			Packet::error("failed to open index file")
+				.send(addr);
+			return;
+		}
+	};
+
+	if write!(index_f, "{}",
+			toml::to_string(&index).unwrap()
+		).is_err()
+	{
+		println!("  error: failed to write to index");
+		Packet::error("failed to write to index")
+			.send(addr);
+		return;
 	}
 
 	Packet::upload("hello", "there", Vec::new(), "hello", "there") // Obi-Wan
