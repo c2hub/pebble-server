@@ -160,7 +160,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 
 			if create_dir_all(
 				  "data/".to_string()
-				+ uname.as_ref()
+				+ name.as_ref()
 				+ "/"
 				+ version.as_ref()).is_err()
 			{
@@ -172,7 +172,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 
 			match File::create(
 				  "data/".to_string()
-				+ uname.as_ref()
+				+ name.as_ref()
 				+ "/"
 				+ version.as_ref()
 				+ "package.zip")
