@@ -207,11 +207,46 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 
 	if !found
 	{
+		if create_dir_all(
+			  "data/".to_string()
+			+ name.as_ref()
+			+ "/"
+			+ version.as_ref()).is_err()
+		{
+			println!("  error: failed to create directory to store pebble");
+			Packet::error("couldn't store pebble, failed to create directory")
+				.send(addr);
+			return;
+		}
+
+		match File::create(
+			  "data/".to_string()
+			+ name.as_ref()
+			+ "/"
+			+ version.as_ref()
+			+ "package.zip")
+		{
+			Ok(mut f) => if f.write_all(&bytes).is_err()
+			{
+				println!("  error: failed to write bytes to zip");
+				Packet::error("failed to write bytes to zip")
+					.send(addr);
+				return;
+			},
+			Err(_) =>
+			{
+				println!("  error: failed to create zip");
+				Packet::error("couldn't store pebble, failed to save zip")
+					.send(addr);
+				return;
+			}
+		}
+
 		index.push(Entry
 		{
-			name: name,
+			name: uname,
 			versions: vec![version],
-			author: uname,
+			author: name,
 			repository: None, //TODO
 		});
 	}
