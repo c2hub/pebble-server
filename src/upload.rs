@@ -83,6 +83,8 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
+	println!("{} {} {} {}", &uname, &hash, &name, &version);
+
 	if user_db.users
 		.unwrap()
 		.iter()
