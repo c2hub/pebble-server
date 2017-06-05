@@ -11,7 +11,7 @@ use toml;
 
 pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
-	let uname = match packet.name
+	let name = match packet.name
 	{
 		Some(u) => u,
 		None =>
@@ -59,7 +59,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
-	let name = match packet.data2
+	let uname = match packet.data2
 	{
 		Some(n) => n,
 		None =>
@@ -88,7 +88,7 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 	if user_db.users
 		.unwrap()
 		.iter()
-		.find(|x| x.name == name && x.hash == hash)
+		.find(|x| x.name == uname && x.hash == hash)
 		.is_none()
 	{
 		println!("  error: incorrect username or password");
