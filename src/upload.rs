@@ -157,6 +157,13 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 					.send(addr);
 				return;
 			}
+			else if old_ver == new_ver
+			{
+				println!("  error: old version is the same as new version, rejecting...");
+				Packet::error("old version is the same as new version")
+					.send(addr);
+				return;
+			}
 
 			entry.versions.insert(0, version.clone());
 
