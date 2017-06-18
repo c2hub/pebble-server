@@ -112,12 +112,11 @@ impl Packet
 			.data(hash.to_owned())
 	}
 
-	pub fn update(name: &str, version: &str) -> Packet
+	pub fn update(data: &str) -> Packet
 	{
 		Packet::new()
 			.ptype(PacketType::Update)
-			.name(name.to_owned())
-			.data(version.to_owned())
+			.data(data.to_owned())
 	}
 
 	pub fn find(name: &str, version: &str) -> Packet

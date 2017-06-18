@@ -4,6 +4,8 @@ use std::net::ToSocketAddrs;
 
 use data::*;
 
+use version_compare::Version;
+
 pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
 	let name = match packet.name
@@ -12,6 +14,28 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 		None =>
 		{
 			Packet::error("find socket requires a name and version")
+				.send(addr);
+			return;
+		}
+	};
+
+	let version = match packet.data
+	{
+		Some(s) => s,
+		None =>
+		{
+			Packet::error("find socket requires a name and version")
+				.send(addr);
+			return;
+		}
+	};
+
+	let version = match Version::from(&version)
+	{
+		Some(s) => s,
+		None =>
+		{
+			Packet::error("invalid version string")
 				.send(addr);
 			return;
 		}
@@ -40,8 +64,15 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
-	if let Some(entry) = index.iter()
-		.find(|ref ent| ent.name == name)
+	if let Some(entry) = index.clone().iter()
+		.find(
+			|ref ent| ent.name == name
+				&& ent.versions
+					.iter()
+					.find(
+						|ref ver| version == Version::from(ver).unwrap()
+					).is_some()
+			)
 	{
 		Packet::find(&name, &entry.versions[0])
 			.send(addr);
