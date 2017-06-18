@@ -16,8 +16,8 @@ pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A)
 		Some(u) => u,
 		None =>
 		{
-			println!("  error: an author needs to have a name");
-			Packet::error("missing username")
+			println!("  error: a library needs a name");
+			Packet::error("missing name")
 				.send(addr);
 			return;
 		}
@@ -64,8 +64,8 @@ pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A)
 		Some(n) => n,
 		None =>
 		{
-			println!("  error: nameless pebbles are not allowed");
-			Packet::error("nameless pabbles are not allowed")
+			println!("  error: an author needs a name");
+			Packet::error("missing username")
 				.send(addr);
 			return;
 		}
@@ -254,9 +254,9 @@ pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A)
 
 		index.push(Entry
 		{
-			name: uname,
+			name: name,
 			versions: vec![version],
-			author: name,
+			author: uname,
 			repository: None, //TODO
 		});
 	}

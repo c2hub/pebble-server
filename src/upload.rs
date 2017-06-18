@@ -254,9 +254,9 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 
 		index.push(Entry
 		{
-			name: uname,
+			name: name,
 			versions: vec![version],
-			author: name,
+			author: uname,
 			repository: None, //TODO
 		});
 	}
