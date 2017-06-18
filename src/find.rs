@@ -30,14 +30,20 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 		}
 	};
 
+	let is_any = version == "*";
+
 	let version = match Version::from(&version)
 	{
 		Some(s) => s,
 		None =>
 		{
-			Packet::error("invalid version string")
-				.send(addr);
-			return;
+			if !is_any
+			{
+				Packet::error("invalid version string")
+					.send(addr);
+				return;
+			}
+			else {Version::from("1.0.0").unwrap()}
 		}
 	};
 
@@ -70,7 +76,7 @@ pub fn find<A: ToSocketAddrs>(packet: Packet, addr: A)
 				&& ent.versions
 					.iter()
 					.find(
-						|ref ver| version == Version::from(ver).unwrap()
+						|ref ver| version == Version::from(ver).unwrap() || is_any
 					).is_some()
 			)
 	{
