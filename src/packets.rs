@@ -139,14 +139,16 @@ impl Packet
 			.extra(hash.to_owned())
 	}
 
-	pub fn publish(name: &str, file: Vec<u8>, version: &str) -> Packet
+	pub fn publish(uname: &str, hash: &str, file: Vec<u8>, name: &str, version: &str) -> Packet
 	{
 		let lib_name = "lib".to_string() + name;
 		Packet::new()
 			.ptype(PacketType::Publish)
-			.name(lib_name)
+			.name(lib_name.to_owned())
 			.raw_data(file)
 			.data(version.to_owned())
+			.data2(uname.to_owned())
+			.extra(hash.to_owned())
 	}
 
 	/*
