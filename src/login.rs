@@ -6,54 +6,33 @@ use std::net::ToSocketAddrs;
 
 pub fn login<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
-	let name = match packet.name
+	if let Packet::Login { name, hash } = packet
 	{
-		Some(n) => n,
-		None =>
+		let user_db = match UserDB::read()
 		{
-			println!("  error: we don't login nameless people");
-			Packet::error("missing username")
-				.send(addr);
-			return;
-		}
-	};
+			Ok(d) => d,
+			Err(_) =>
+			{
+				println!("  error: failed to read user db");
+				Packet::error("database error")
+					.send(addr);
+				exit(-1);
+			}
+		};
 
-	let hash = match packet.data
-	{
-		Some(h) => h,
-		None =>
+		if user_db.users
+			.unwrap()
+			.iter()
+			.find(|x| x.name == name && x.hash == hash)
+			.is_some()
 		{
-			println!("  error: we don't login people with no password");
-			Packet::error("missing password")
+			Packet::login("hello", "there")
 				.send(addr);
-			return;
 		}
-	};
-
-	let user_db = match UserDB::read()
-	{
-		Ok(d) => d,
-		Err(_) =>
+		else
 		{
-			println!("  error: failed to read user db");
-			Packet::error("database error")
+			Packet::error("couldn't login - invalid username or password")
 				.send(addr);
-			exit(-1);
 		}
-	};
-
-	if user_db.users
-		.unwrap()
-		.iter()
-		.find(|x| x.name == name && x.hash == hash)
-		.is_some()
-	{
-		Packet::login("hello", "there")
-			.send(addr);
-	}
-	else
-	{
-		Packet::error("couldn't login - invalid username or password")
-			.send(addr);
 	}
 }

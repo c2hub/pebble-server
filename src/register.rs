@@ -11,101 +11,80 @@ use data::*;
 
 pub fn register<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
-	let mut user_db = match UserDB::read()
+	if let Packet::Register { name, hash } = packet
 	{
-		Ok(u) => u,
-		Err(_) =>
+		let mut user_db = match UserDB::read()
 		{
-			println!("  error: failed to parse user database");
-			Packet::error("failed to parse user db")
-				.send(addr);
-			return;
-		}
-	};
-
-	if user_db.users.clone().is_none()
-	{
-		let uv = Vec::new();
-		user_db.users = Some(uv);
-	};
-
-	let name = match packet.name
-	{
-		Some(n) => n,
-		None =>
-		{
-			println!("  error: we don't register nameless people");
-			Packet::error("you need a name to be registered")
-				.send(addr);
-			return;
-		}
-	};
-
-	let hash = match packet.data
-	{
-		Some(h) => h,
-		None =>
-		{
-			println!("  error: we don't register passwordless people either");
-			Packet::error("you need a password to register")
-				.send(addr);
-			return;
-		}
-	};
-
-	let usr = User
-	{
-		name: name.clone(),
-		hash: hash,
-	};
-
-	match user_db.users
-	{
-		Some(ref mut u) =>
-		{
-			if u.clone().iter().find(|x| x.name == name).is_none()
-				{u.push(usr);}
-			else
+			Ok(u) => u,
+			Err(_) =>
 			{
-				Packet::error("user already exists")
+				println!("  error: failed to parse user database");
+				Packet::error("failed to parse user db")
 					.send(addr);
 				return;
 			}
-		},
-		None => unreachable!()
+		};
+
+		if user_db.users.clone().is_none()
+		{
+			let uv = Vec::new();
+			user_db.users = Some(uv);
+		};
+
+		let usr = User
+		{
+			name: name.clone(),
+			hash: hash,
+		};
+
+		match user_db.users
+		{
+			Some(ref mut u) =>
+			{
+				if u.clone().iter().find(|x| x.name == name).is_none()
+					{u.push(usr);}
+				else
+				{
+					Packet::error("user already exists")
+						.send(addr);
+					return;
+				}
+			},
+			None => unreachable!()
+		}
+
+		let path = match home_dir()
+		{
+			Some(mut d) => {d.push("pebble_users"); d},
+			None =>
+			{
+				println!("  error: failed to get user db path");
+				exit(-1);
+			}
+		};
+
+		let mut db_file = match File::create(&path)
+		{
+			Ok(f) => f,
+			Err(_) =>
+			{
+				println!("  error: failed to open user db");
+				exit(-1);
+			}
+		};
+
+		match write!(db_file, "{}",
+			toml::to_string(&user_db).unwrap()
+		)
+		{
+			Ok(_) => {},
+			Err(e) =>
+			{
+				println!("{}", e);
+			}
+		}
+
+		Packet::register("hello", "there") // Kenobi
+			.send(addr);
 	}
-
-	let path = match home_dir()
-	{
-		Some(mut d) => {d.push("pebble_users"); d},
-		None =>
-		{
-			println!("  error: failed to get user db path");
-			exit(-1);
-		}
-	};
-
-	let mut db_file = match File::create(&path)
-	{
-		Ok(f) => f,
-		Err(_) =>
-		{
-			println!("  error: failed to open user db");
-			exit(-1);
-		}
-	};
-
-	match write!(db_file, "{}",
-		toml::to_string(&user_db).unwrap()
-	)
-	{
-		Ok(_) => {},
-		Err(e) =>
-		{
-			println!("{}", e);
-		}
-	}
-
-	Packet::register("hello", "there") // Kenobi
-		.send(addr);
 }

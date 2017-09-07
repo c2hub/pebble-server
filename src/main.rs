@@ -26,8 +26,9 @@ mod error;
 mod register;
 mod login;
 mod new;
+mod fehler;
 
-use packets::{Packet, PacketType};
+use packets::Packet;
 use data::{Index, Entry, UserDB, User};
 
 use publish::publish;
@@ -176,16 +177,16 @@ fn main()
 		println!("  {} from {}", &packet, &src);
 		thread::spawn( move ||
 			{
-				match packet.ptype
+				match packet
 				{
-					PacketType::Publish => publish(packet, src),
-					PacketType::Update => update(packet, src),
-					PacketType::Find => find(packet, src),
-					PacketType::Upload => upload(packet, src),
-					PacketType::Error => error(packet, src),
-					PacketType::Register => register(packet, src),
-					PacketType::Login => login(packet, src),
-					PacketType::New => new(packet, src),
+					Packet::Publish {..} => publish(packet, src),
+					Packet::Update {..} => update(packet, src),
+					Packet::Find {..} => find(packet, src),
+					Packet::Upload {..} => upload(packet, src),
+					Packet::Error {..} => error(packet, src),
+					Packet::Register {..} => register(packet, src),
+					Packet::Login {..} => login(packet, src),
+					Packet::New => new(packet, src),
 				}
 			}
 		);

@@ -9,145 +9,90 @@ use std::fmt;
 use SOCKET;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct Packet
+pub enum Packet
 {
-	pub ptype: PacketType,
-	pub name: Option<String>,
-	pub extra: Option<String>,
-	pub data: Option<String>,
-	pub data2: Option<String>,
-	pub raw_data: Option<Vec<u8>>
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum PacketType
-{
-	Publish,
-	Update,
-	Find,
-	Upload,
-	Error,
-	Register,
-	Login,
+	Publish { uname: String, hash: String, file: Vec<u8>, name: String, version: String },
+	Update { data: String },
+	Find { name: String, version: String },
+	Upload { uname: String, hash: String, file: Vec<u8>, name: String, version: String },
+	Error { msg: String },
+	Register { name: String, hash: String },
+	Login { name: String, hash: String },
 	New,
 }
 
 impl Packet
 {
-	/*
-	** Yay, builder pattern!
-	*/
 	pub fn new() -> Packet
 	{
-		Packet
-		{
-			ptype: PacketType::New,
-			name: None,
-			extra: None,
-			data: None,
-			data2: None,
-			raw_data: None
-		}
+		Packet::New
 	}
-
-	pub fn name(mut self, name: String) -> Packet
-	{
-		self.name = Some(name);
-		self
-	}
-
-	pub fn ptype(mut self, ptype: PacketType) -> Packet
-	{
-		self.ptype = ptype;
-		self
-	}
-
-	pub fn extra(mut self, extra: String) -> Packet
-	{
-		self.extra = Some(extra);
-		self
-	}
-
-	pub fn data(mut self, data: String) -> Packet
-	{
-		self.data = Some(data);
-		self
-	}
-
-	pub fn data2(mut self, data: String) -> Packet
-	{
-		self.data2 = Some(data);
-		self
-	}
-
-	pub fn raw_data(mut self, raw_data: Vec<u8>) -> Packet
-	{
-		self.raw_data = Some(raw_data);
-		self
-	}
-
 	/*
 	** Types
 	*/
 	pub fn error(msg: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Error)
-			.name(msg.to_owned())
+		Packet::Error { msg: msg.to_owned() }
 	}
 
 	pub fn register(name: &str, hash: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Register)
-			.name(name.to_owned())
-			.data(hash.to_owned())
+		Packet::Register
+		{
+			name: name.to_owned(),
+			hash: hash.to_owned(),
+		}
 	}
 
 	pub fn login(name: &str, hash: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Login)
-			.name(name.to_owned())
-			.data(hash.to_owned())
+		Packet::Login
+		{
+			name: name.to_owned(),
+			hash: hash.to_owned(),
+		}
 	}
 
 	pub fn update(data: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Update)
-			.data(data.to_owned())
+		Packet::Update
+		{
+			data: data.to_owned(),
+		}
 	}
 
 	pub fn find(name: &str, version: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Find)
-			.name(name.to_owned())
-			.data(version.to_owned())
+		Packet::Find
+		{
+			name: name.to_owned(),
+			version: version.to_owned(),
+		}
 	}
 
 	pub fn upload(uname: &str, hash: &str, file: Vec<u8>, name: &str, version: &str) -> Packet
 	{
-		Packet::new()
-			.ptype(PacketType::Upload)
-			.name(uname.to_owned())
-			.raw_data(file)
-			.data(version.to_owned())
-			.data2(name.to_owned())
-			.extra(hash.to_owned())
+		Packet::Upload
+		{
+			uname: uname.to_owned(),
+			hash: hash.to_owned(),
+			file: file,
+			name: name.to_owned(),
+			version: version.to_owned(),
+		}
 	}
 
 	pub fn publish(uname: &str, hash: &str, file: Vec<u8>, name: &str, version: &str) -> Packet
 	{
 		let lib_name = "lib".to_string() + name;
-		Packet::new()
-			.ptype(PacketType::Publish)
-			.name(lib_name.to_owned())
-			.raw_data(file)
-			.data(version.to_owned())
-			.data2(uname.to_owned())
-			.extra(hash.to_owned())
+		Packet::Publish
+		{
+			name: lib_name.to_owned(),
+			hash: hash.to_owned(),
+			uname: uname.to_owned(),
+			file: file,
+			version: version.to_owned()
+		}
 	}
 
 	/*
@@ -194,90 +139,42 @@ impl fmt::Display for Packet
 			Yellow.bold().paint("packet ")
 		);
 
-		match self.ptype
+		match *self
 		{
-			PacketType::New =>
+			Packet::New =>
 				write!(f, "new"),
-			PacketType::Find =>
+			Packet::Find { ref name, .. } =>
 				write!(f, "find {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Green.bold().paint(name.clone())
 				),
-			PacketType::Error =>
+			Packet::Error { ref msg } =>
 				write!(f, "error {}",
-					Red.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Red.bold().paint(msg.clone())
 				),
-			PacketType::Upload =>
+			Packet::Upload { ref name, ref version, .. } =>
 				write!(f,  "upload [{}] {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					}),
-					Red.bold().paint(match self.data
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Green.bold().paint(name.clone()),
+					Red.bold().paint(version.clone())
 				),
-			PacketType::Publish =>
+			Packet::Publish { ref name, ref version, .. } =>
 				write!(f,  "publish [{}] {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					}),
-					Red.bold().paint(match self.data
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Green.bold().paint(name.clone()),
+					Red.bold().paint(version.clone())
 				),
-			PacketType::Update =>
-				write!(f,  "update [{}] {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					}),
-					Red.bold().paint(match self.data
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+			// there is something wrong in here, TODO
+			Packet::Update { ref data } =>
+				write!(f,  "update {}",
+					Red.bold().paint(data.clone())
 				),
-			PacketType::Register =>
+			Packet::Register { ref name, ref hash } =>
 				write!(f,  "register {} {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					}),
-					Red.bold().paint(match self.data
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Green.bold().paint(name.clone()),
+					Red.bold().paint(hash.clone())
 				),
-			PacketType::Login =>
+			Packet::Login { ref name, ref hash } =>
 				write!(f,  "login {} {}",
-					Green.bold().paint(match self.name
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					}),
-					Red.bold().paint(match self.data
-					{
-						Some(ref n) => n.clone(),
-						None => "none".to_string(),
-					})
+					Green.bold().paint(name.clone()),
+					Red.bold().paint(hash.clone())
 				),
 		}
 	}

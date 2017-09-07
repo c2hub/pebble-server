@@ -3,5 +3,5 @@ use std::net::ToSocketAddrs;
 
 pub fn error<A: ToSocketAddrs>(packet: Packet, addr: A)
 {
-	unimplemented!();
+	println!("  someone sent an error packet...");
 }
