@@ -145,6 +145,7 @@ println!("predir");
 				{
 					println!("looptyloopstart");
 					let mut res = [0; 2 * 1024 * 1024];
+					println!("1");
 					let (amt, src) = match socket.recv_from(&mut res)
 					{
 						Ok((a,s)) => (a,s),
@@ -154,8 +155,9 @@ println!("predir");
 							exit(-1);
 						}
 					};
-
+					println!("2");
 					let res = &mut res[..amt];
+					println!("3");
 					let packet: Packet = match serde_cbor::de::from_slice(res)
 					{
 						Ok(p) => p,
