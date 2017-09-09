@@ -6,7 +6,6 @@ extern crate serde_derive;
 extern crate lazy_static;
 extern crate serde_cbor;
 extern crate ansi_term;
-extern crate serde;
 extern crate toml;
 
 use std::thread;
@@ -187,6 +186,7 @@ fn main()
 					Packet::Register {..} => register(packet, src),
 					Packet::Login {..} => login(packet, src),
 					Packet::New => new(packet, src),
+					Packet::Transfer {..} => (),
 				}
 			}
 		);

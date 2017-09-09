@@ -3,6 +3,7 @@ use serde_cbor;
 use ansi_term::Colour::{Yellow, Green, Red};
 
 use std::net::ToSocketAddrs;
+use std::net::UdpSocket;
 use std::process::exit;
 use std::fmt;
 
@@ -14,10 +15,11 @@ pub enum Packet
 	Publish { uname: String, hash: String, file: Vec<u8>, name: String, version: String },
 	Update { data: String },
 	Find { name: String, version: String },
-	Upload { uname: String, hash: String, file: Vec<u8>, name: String, version: String },
+	Upload { uname: String, hash: String, parts: u32, name: String, version: String },
 	Error { msg: String },
 	Register { name: String, hash: String },
 	Login { name: String, hash: String },
+	Transfer { part: u32, bytes: Vec<u8> },
 	New,
 }
 
@@ -70,13 +72,13 @@ impl Packet
 		}
 	}
 
-	pub fn upload(uname: &str, hash: &str, file: Vec<u8>, name: &str, version: &str) -> Packet
+	pub fn upload(uname: &str, hash: &str, parts: u32, name: &str, version: &str) -> Packet
 	{
 		Packet::Upload
 		{
 			uname: uname.to_owned(),
 			hash: hash.to_owned(),
-			file: file,
+			parts: parts,
 			name: name.to_owned(),
 			version: version.to_owned(),
 		}
@@ -92,6 +94,15 @@ impl Packet
 			uname: uname.to_owned(),
 			file: file,
 			version: version.to_owned()
+		}
+	}
+
+	pub fn transfer(part: u32, bytes: Vec<u8>) -> Packet
+	{
+		Packet::Transfer
+		{
+			part: part,
+			bytes: bytes,
 		}
 	}
 
@@ -124,6 +135,24 @@ impl Packet
 		};
 
 		if let Err(e) = SOCKET.send_to(&bytes, addr)
+		{
+			println!("{}", e);
+		}
+	}
+
+	pub fn send_from<A: ToSocketAddrs>(self, addr: A, sock: &UdpSocket)
+	{
+		let bytes = match self.clone().make()
+		{
+			Ok(b) => b,
+			Err(_) =>
+			{
+				println!("  error: failed to serialize packet. {:?}", self);
+				exit(-1);
+			}
+		};
+
+		if let Err(e) = sock.send_to(&bytes, addr)
 		{
 			println!("{}", e);
 		}
@@ -176,6 +205,7 @@ impl fmt::Display for Packet
 					Green.bold().paint(name.clone()),
 					Red.bold().paint(hash.clone())
 				),
+			Packet::Transfer { .. } => write!(f,  "transfer"),
 		}
 	}
 }

@@ -3,15 +3,17 @@ use packets::Packet;
 
 use std::io::Write;
 use std::process::exit;
+use std::net::UdpSocket;
 use std::net::ToSocketAddrs;
 use std::fs::{File, create_dir_all};
 
 use version_compare::Version;
+use serde_cbor;
 use toml;
 
-pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
+pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 {
-	if let Packet::Upload { uname, hash, file, name, version } = packet
+	if let Packet::Upload { uname, hash, parts, name, version } = packet
 	{
 		let user_db = match UserDB::read()
 		{
@@ -62,6 +64,8 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 				return;
 			}
 		};
+
+		let mut file: Vec<u8> = Vec::new();
 
 		let found = if let Some(ref mut entry) = index.iter_mut().find(|ref ent| ent.name == name)
 		{
@@ -119,6 +123,69 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 					Packet::error("couldn't store pebble, failed to create directory")
 						.send(addr);
 					return;
+				}
+
+				let socket = match UdpSocket::bind("0.0.0.0:0")
+				{
+					Ok(s) => s,
+					Err(_) => 
+					{
+						println!("  error: failed to bind to socket");
+						exit(-1);
+					},
+				};
+
+				// send over the port
+				Packet::upload("hello", "there", socket.local_addr().unwrap().port() as u32, "hello", "there")
+					.send(addr.clone());
+
+				let mut current_part = 1;
+				loop
+				{
+					let mut res = [0; 2 * 1024 * 1024];
+					let (amt, src) = match socket.recv_from(&mut res)
+					{
+						Ok((a,s)) => (a,s),
+						Err(_) =>
+						{
+							println!("  error: failed to receive packet");
+							exit(-1);
+						}
+					};
+
+					let res = &mut res[..amt];
+					let packet: Packet = match serde_cbor::de::from_slice(res)
+					{
+						Ok(p) => p,
+						Err(_) =>
+						{
+							println!("  error: failed to deserialize packet");
+							exit(-1);
+						}
+					};
+
+					match packet
+					{
+						Packet::Transfer { part, mut bytes } =>
+						{
+							if part != current_part
+							{
+								Packet::error("file transfer failed, part lost")
+									.send(src);
+							}
+							else
+							{
+								current_part += 1;
+								file.append(&mut bytes);
+								Packet::transfer(part + 1, Vec::new())
+									.send_from(src, &socket);
+							}
+						},
+						_ => (),
+					}
+
+					if current_part == parts
+						{break;}
 				}
 
 				match File::create(
@@ -224,8 +291,5 @@ pub fn upload<A: ToSocketAddrs>(packet: Packet, addr: A)
 				.send(addr);
 			return;
 		}
-
-		Packet::upload("hello", "there", Vec::new(), "hello", "there") // Obi-Wan
-			.send(addr);
 	}
 }
