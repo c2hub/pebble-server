@@ -67,6 +67,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 
 		let mut file: Vec<u8> = Vec::new();
 
+println!("prefound");
 		let found = if let Some(ref mut entry) = index.iter_mut().find(|ref ent| ent.name == name)
 		{
 			if entry.author == uname
@@ -112,7 +113,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 				}
 
 				entry.versions.insert(0, version.clone());
-
+println!("predir");
 				if create_dir_all(
 					  "data/".to_string()
 					+ name.as_ref()
@@ -134,7 +135,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 						exit(-1);
 					},
 				};
-
+				println!("preloopty");
 				// send over the port
 				Packet::upload("hello", "there", socket.local_addr().unwrap().port() as u32, "hello", "there")
 					.send(addr.clone());
@@ -142,6 +143,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 				let mut current_part = 1;
 				loop
 				{
+					println!("looptyloopstart");
 					let mut res = [0; 2 * 1024 * 1024];
 					let (amt, src) = match socket.recv_from(&mut res)
 					{
@@ -163,11 +165,12 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 							exit(-1);
 						}
 					};
-
+					println!("looptyloopmid");
 					match packet
 					{
 						Packet::Transfer { part, mut bytes } =>
 						{
+							println!("looptyloopmatch");
 							if part != current_part
 							{
 								Packet::error("file transfer failed, part lost")
@@ -183,11 +186,11 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 						},
 						_ => (),
 					}
-
+					println!("looptyloop");
 					if current_part == parts
 						{break;}
 				}
-
+				println!("afterloopty");
 				match File::create(
 					  "data/".to_string()
 					+ name.as_ref()
@@ -205,7 +208,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 					Err(_) =>
 					{
 						println!("  error: failed to create zip");
-						Packet::error("couldn't store pebble, failed to save zip")
+						Packet::error("couldn't store pebble, save zip")
 							.send(addr);
 						return;
 					}
