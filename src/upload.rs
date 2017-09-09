@@ -144,9 +144,9 @@ println!("predir");
 				loop
 				{
 					println!("looptyloopstart");
-					let mut res = [0; 2 * 1024 * 1024];
+					let mut res = Box::new([0; 64 * 1024]);
 					println!("1");
-					let (amt, src) = match socket.recv_from(&mut res)
+					let (amt, src) = match socket.recv_from(&mut (*res))
 					{
 						Ok((a,s)) => (a,s),
 						Err(_) =>
