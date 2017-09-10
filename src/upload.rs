@@ -133,7 +133,7 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 					},
 				};
 
-				println!("{}", socket.local_addr().unwrap().port())
+				println!("{}", socket.local_addr().unwrap().port());
 				// send over the port
 				Packet::upload("hello", "there", socket.local_addr().unwrap().port() as u32, "hello", "there")
 					.send(addr.clone());
