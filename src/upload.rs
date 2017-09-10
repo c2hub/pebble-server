@@ -4,8 +4,8 @@ use packets::Packet;
 use std::io::Write;
 use std::process::exit;
 use std::net::UdpSocket;
-use std::net::ToSocketAddrs;
 use std::fs::{File, create_dir_all};
+use std::net::{ToSocketAddrs, SocketAddr};
 
 use version_compare::Version;
 use serde_cbor;
@@ -137,6 +137,12 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 				// send over the port
 				Packet::upload("hello", "there", socket.local_addr().unwrap().port() as u32, "hello", "there")
 					.send(addr.clone());
+
+				// dummy packet to fool the NAT, learning tricks from Skype
+				Packet::transfer(0, Vec::new()).send_from(
+					SocketAddr::new(addr.to_socket_addrs().unwrap().next().unwrap().ip(), socket.local_addr().unwrap().port()),
+					&socket
+				);
 
 				let mut current_part = 1;
 				loop
