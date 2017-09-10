@@ -27,8 +27,6 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 			}
 		};
 
-		println!("{} {} {} {}", &uname, &hash, &name, &version);
-
 		if user_db.users
 			.unwrap()
 			.iter()
@@ -67,7 +65,6 @@ pub fn upload<A: ToSocketAddrs + Clone>(packet: Packet, addr: A)
 
 		let mut file: Vec<u8> = Vec::new();
 
-println!("prefound");
 		let found = if let Some(ref mut entry) = index.iter_mut().find(|ref ent| ent.name == name)
 		{
 			if entry.author == uname
@@ -113,7 +110,7 @@ println!("prefound");
 				}
 
 				entry.versions.insert(0, version.clone());
-println!("predir");
+
 				if create_dir_all(
 					  "data/".to_string()
 					+ name.as_ref()
@@ -135,7 +132,8 @@ println!("predir");
 						exit(-1);
 					},
 				};
-				println!("preloopty");
+
+				println!("{}", socket.local_addr().unwrap().port())
 				// send over the port
 				Packet::upload("hello", "there", socket.local_addr().unwrap().port() as u32, "hello", "there")
 					.send(addr.clone());
@@ -143,9 +141,9 @@ println!("predir");
 				let mut current_part = 1;
 				loop
 				{
-					println!("looptyloopstart");
+
 					let mut res = Box::new([0; 64 * 1024]);
-					println!("1");
+
 					let (amt, src) = match socket.recv_from(&mut (*res))
 					{
 						Ok((a,s)) => (a,s),
@@ -155,9 +153,9 @@ println!("predir");
 							exit(-1);
 						}
 					};
-					println!("2");
+
 					let res = &mut res[..amt];
-					println!("3");
+
 					let packet: Packet = match serde_cbor::de::from_slice(res)
 					{
 						Ok(p) => p,
@@ -167,12 +165,11 @@ println!("predir");
 							exit(-1);
 						}
 					};
-					println!("looptyloopmid");
+
 					match packet
 					{
 						Packet::Transfer { part, mut bytes } =>
 						{
-							println!("looptyloopmatch");
 							if part != current_part
 							{
 								Packet::error("file transfer failed, part lost")
@@ -188,11 +185,11 @@ println!("predir");
 						},
 						_ => (),
 					}
-					println!("looptyloop");
+
 					if current_part == parts
 						{break;}
 				}
-				println!("afterloopty");
+
 				match File::create(
 					  "data/".to_string()
 					+ name.as_ref()
