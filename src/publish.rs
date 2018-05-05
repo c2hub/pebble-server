@@ -1,201 +1,154 @@
 use data::*;
 use packets::Packet;
 
+use std::fs::{create_dir_all, File};
 use std::io::Write;
-use std::process::exit;
 use std::net::ToSocketAddrs;
-use std::fs::{File, create_dir_all};
+use std::process::exit;
 
-use version_compare::Version;
 use toml;
+use version_compare::Version;
 
-pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A)
-{
-	if let Packet::Publish { uname, hash, file, name, version } = packet
+pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A) {
+	if let Packet::Publish {
+		uname,
+		hash,
+		file,
+		name,
+		version,
+	} = packet
 	{
-		let user_db = match UserDB::read()
-		{
+		let user_db = match UserDB::read() {
 			Ok(d) => d,
-			Err(_) =>
-			{
+			Err(_) => {
 				println!("  error: failed to read user db");
-				Packet::error("database error")
-					.send(addr);
+				Packet::error("database error").send(addr);
 				exit(-1);
 			}
 		};
 
 		// println!("{} {} {} {}", &uname, &hash, &name, &version);
 
-		if user_db.users
+		if user_db
+			.users
 			.unwrap()
 			.iter()
 			.find(|x| x.name == uname && x.hash == hash)
 			.is_none()
 		{
 			println!("  error: incorrect username or password");
-			Packet::error("incorrect username or password")
-				.send(addr);
+			Packet::error("incorrect username or password").send(addr);
 			return;
 		}
 
-		let index = match Index::read()
-		{
+		let index = match Index::read() {
 			Ok(i) => i,
-			Err(e) =>
-			{
+			Err(e) => {
 				println!("  error: failed to parse index, {}", e);
-				Packet::error("failed to parse index")
-					.send(addr);
+				Packet::error("failed to parse index").send(addr);
 				exit(-1);
 			}
 		};
 
-		let mut index = match index.entries
-		{
+		let mut index = match index.entries {
 			Some(i) => i,
-			None =>
-			{
+			None => {
 				println!("  error: can't load index");
-				Packet::error("can't load index")
-					.send(addr);
+				Packet::error("can't load index").send(addr);
 				return;
 			}
 		};
 
-		let found = if let Some(ref mut entry) = index.iter_mut().find(|ref ent| ent.name == name)
-		{
-			if entry.author == uname
-			{
+		let found = if let Some(ref mut entry) = index.iter_mut().find(|ref ent| ent.name == name) {
+			if entry.author == uname {
 				let old_ver_str = entry.versions[0].clone();
-				let old_ver = match Version::from(&old_ver_str)
-				{
+				let old_ver = match Version::from(&old_ver_str) {
 					Some(o) => o,
-					None =>
-					{
+					None => {
 						println!("  error: failed to recognize old version");
-						Packet::error("failed to recognize old version")
-							.send(addr);
+						Packet::error("failed to recognize old version").send(addr);
 						return;
 					}
 				};
 
-				let new_ver = match Version::from(&version)
-				{
+				let new_ver = match Version::from(&version) {
 					Some(n) => n,
-					None =>
-					{
+					None => {
 						println!("  error: invalid new version");
-						Packet::error("invalid new version")
-							.send(addr);
+						Packet::error("invalid new version").send(addr);
 						return;
 					}
 				};
 
-				if old_ver > new_ver
-				{
+				if old_ver > new_ver {
 					println!("  error: old version is newer than new version, rejecting...");
-					Packet::error("old version is newer than new version")
-						.send(addr);
+					Packet::error("old version is newer than new version").send(addr);
 					return;
-				}
-				else if old_ver == new_ver
-				{
+				} else if old_ver == new_ver {
 					println!("  error: old version is the same as new version, rejecting...");
-					Packet::error("old version is the same as new version")
-						.send(addr);
+					Packet::error("old version is the same as new version").send(addr);
 					return;
 				}
 
 				entry.versions.insert(0, version.clone());
 
-				if create_dir_all(
-					  "data/".to_string()
-					+ name.as_ref()
-					+ "/"
-					+ version.as_ref()).is_err()
+				if create_dir_all("data/".to_string() + name.as_ref() + "/" + version.as_ref())
+					.is_err()
 				{
 					println!("  error: failed to create directory to store pebble");
-					Packet::error("couldn't store pebble, failed to create directory")
-						.send(addr);
+					Packet::error("couldn't store pebble, failed to create directory").send(addr);
 					return;
 				}
 
 				match File::create(
-					  "data/".to_string()
-					+ name.as_ref()
-					+ "/"
-					+ version.as_ref()
-					+ "libpackage.zip")
-				{
-					Ok(mut f) => if f.write_all(&file).is_err()
-					{
+					"data/".to_string() + name.as_ref() + "/" + version.as_ref() + "libpackage.zip",
+				) {
+					Ok(mut f) => if f.write_all(&file).is_err() {
 						println!("  error: failed to write bytes to zip");
-						Packet::error("failed to write bytes to zip")
-							.send(addr);
+						Packet::error("failed to write bytes to zip").send(addr);
 						return;
 					},
-					Err(_) =>
-					{
+					Err(_) => {
 						println!("  error: failed to create zip");
-						Packet::error("couldn't store pebble, failed to save zip")
-							.send(addr);
+						Packet::error("couldn't store pebble, failed to save zip").send(addr);
 						return;
 					}
 				}
-			}
-			else
-			{
+			} else {
 				println!("  error: pebble doesn't belong to user!");
-				Packet::error("the pebble doesn't belong to you!")
-					.send(addr);
+				Packet::error("the pebble doesn't belong to you!").send(addr);
 				return;
 			}
 			true
-		}
-		else
-			{false};
+		} else {
+			false
+		};
 
-		if !found
-		{
-			if create_dir_all(
-				  "data/".to_string()
-				+ name.as_ref()
-				+ "/"
-				+ version.as_ref()).is_err()
+		if !found {
+			if create_dir_all("data/".to_string() + name.as_ref() + "/" + version.as_ref()).is_err()
 			{
 				println!("  error: failed to create directory to store pebble");
-				Packet::error("couldn't store pebble, failed to create directory")
-					.send(addr);
+				Packet::error("couldn't store pebble, failed to create directory").send(addr);
 				return;
 			}
 
 			match File::create(
-				  "data/".to_string()
-				+ name.as_ref()
-				+ "/"
-				+ version.as_ref()
-				+ "/"
-				+ "libpackage.zip")
-			{
-				Ok(mut f) => if f.write_all(&file).is_err()
-				{
+				"data/".to_string() + name.as_ref() + "/" + version.as_ref() + "/"
+					+ "libpackage.zip",
+			) {
+				Ok(mut f) => if f.write_all(&file).is_err() {
 					println!("  error: failed to write bytes to zip");
-					Packet::error("failed to write bytes to zip")
-						.send(addr);
+					Packet::error("failed to write bytes to zip").send(addr);
 					return;
 				},
-				Err(_) =>
-				{
+				Err(_) => {
 					println!("  error: failed to create zip");
-					Packet::error("couldn't store pebble, failed to save zip")
-						.send(addr);
+					Packet::error("couldn't store pebble, failed to save zip").send(addr);
 					return;
 				}
 			}
 
-			index.push(Entry
-			{
+			index.push(Entry {
 				name: name,
 				versions: vec![version],
 				author: uname,
@@ -203,25 +156,25 @@ pub fn publish<A: ToSocketAddrs>(packet: Packet, addr: A)
 			});
 		}
 
-		let mut index_f = match File::create("data/index")
-		{
+		let mut index_f = match File::create("data/index") {
 			Ok(f) => f,
-			Err(_) =>
-			{
+			Err(_) => {
 				println!("  error: failed to open index file");
-				Packet::error("failed to open index file")
-					.send(addr);
+				Packet::error("failed to open index file").send(addr);
 				return;
 			}
 		};
 
-		if write!(index_f, "{}",
-				toml::to_string(&Index {entries: Some(index)}).unwrap()
-			).is_err()
+		if write!(
+			index_f,
+			"{}",
+			toml::to_string(&Index {
+				entries: Some(index)
+			}).unwrap()
+		).is_err()
 		{
 			println!("  error: failed to write to index");
-			Packet::error("failed to write to index")
-				.send(addr);
+			Packet::error("failed to write to index").send(addr);
 			return;
 		}
 
